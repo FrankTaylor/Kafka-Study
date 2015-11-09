@@ -11,7 +11,6 @@ import java.util.concurrent.Future;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
-import org.apache.kafka.common.PartitionInfo;
 
 /**
  * Kafka Producer 的测试。 
@@ -45,51 +44,31 @@ public class MyProducer {
 	}
 	
 	private void testSendMessage() {
-		ExecutorService exec = Executors.newFixedThreadPool(THREAD_NUMS);
 		
-		for (int i = 0; i < 1; i++) {
-			exec.execute(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						KafkaProducer<String, String> kafkaProducer = new KafkaProducer<String, String>(getProperties());
-						List<PartitionInfo> partitionList = kafkaProducer.partitionsFor("abc");
-						
-						System.out.println(partitionList);
-						System.out.println(partitionList.size());
-						
-//						ProducerRecord<String, String> record = new ProducerRecord<String, String>("abc", "aaaaaaaaaa", "bbbbbbbbbbbbbb");
-//						
-//						Future<RecordMetadata> f = kafkaProducer.send(record);
-//						
-//						RecordMetadata metadata = f.get();
-//						System.out.println("已发送元数据 ：topic = " + metadata.topic() + ", partition = " + metadata.partition() + ", offset = " + metadata.offset());
-						
-//						for (int i = 0; i < 100000000; i++) {
-//							for (String topic : TOPIC_LIST) {
-//								ProducerRecord<String, String> record = new ProducerRecord<String, String>(topic, topic + "_key_" + i, topic + "_value_" + i);
-//								
-//								Future<RecordMetadata> f = kafkaProducer.send(record);
-//								
-//								RecordMetadata metadata = f.get();
-//								System.out.println("已发送元数据 ：topic = " + metadata.topic() + ", partition = " + metadata.partition() + ", offset = " + metadata.offset());
-//							}
-//						}
-						
-						kafkaProducer.close();
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				}
-			});
+		KafkaProducer<String, String> kafkaProducer = new KafkaProducer<String, String>(getProperties());
+		
+		try {
+			for (int i = 400; i < 500; i++) {
+				ProducerRecord<String, String> record = new ProducerRecord<String, String>("def", 2, "key_" + i, "value_" + i);
+				Future<RecordMetadata> f = kafkaProducer.send(record);
+				RecordMetadata metadata = f.get();
+				System.out.println("已发送元数据 ：topic = " + metadata.topic() + ", partition = " + metadata.partition() + ", offset = " + metadata.offset());
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			kafkaProducer.close();
 		}
-		
-		exec.shutdown();
+
 	}
 	
-	private Properties getProperties() throws IOException {
+	private Properties getProperties() {
 		Properties properties = new Properties();
-		properties.load(ClassLoader.getSystemResourceAsStream(PROPERTIES_FILEPATH));
+		try {
+			properties.load(ClassLoader.getSystemResourceAsStream(PROPERTIES_FILEPATH));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		return properties;
 	}
 }

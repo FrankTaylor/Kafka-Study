@@ -1,6 +1,5 @@
 package example;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,27 +53,35 @@ public class MyConsumer {
 				
 				// Kafka Topic 名称和分片的集合。
 				Map<String, Integer> topicMap = new HashMap<String, Integer>();
-				topicMap.put("shushang", 1);
+				topicMap.put("def", 6);
 				
-		        Map<String, List<KafkaStream<byte[], byte[]>>> streams = cc.createMessageStreams(topicMap);
+		        Map<String, List<KafkaStream<byte[], byte[]>>> topicMessageStreams = cc.createMessageStreams(topicMap);
+		       
+		        for (String key : topicMessageStreams.keySet()) {
+		        	List<KafkaStream<byte[], byte[]>> partitions = topicMessageStreams.get(key);
+
+		        	ExecutorService exec = Executors.newFixedThreadPool(6);
+		        	for (final KafkaStream<byte[], byte[]> partition : partitions) {
+		        		
+		        		exec.execute(new Runnable() {
+		        			public void run() {
+		        				ConsumerIterator<byte[], byte[]> it = partition.iterator();
+				        		while (it.hasNext()) {
+				        			MessageAndMetadata<byte[],byte[]> item = it.next();
+				        			
+				        			System.out.println("partiton = " + item.partition());
+				        			System.out.println("offset = " + item.offset());
+				        			System.out.println("message = " + new String(item.message()));
+				        			
+				        		}
+		        			}
+		        		});
+		        	}
+		        	exec.shutdown();
+		        }
 		        
 		        
-		        List<KafkaStream<byte[], byte[]>> partitions = streams.get("shushang");
-		        ConsumerIterator<byte[], byte[]> it = partitions.get(0).iterator();
-		        
-                while (it.hasNext()) {
-                    MessageAndMetadata<byte[],byte[]> item = it.next();
-                    
-                    System.out.println("partiton = " + item.partition());
-                    System.out.println("offset = " + item.offset());
-                    System.out.println("message = " + new String(item.message()));
-                    
-                    try {
-						TimeUnit.SECONDS.sleep(1);
-					} catch (InterruptedException e) { e.printStackTrace(); }
-                }
-		        
-		        
+                
 //		        for (Map.Entry<String, Integer> entry : topicMap.entrySet()) {
 //		        	
 //		        	String topicName = entry.getKey();
@@ -113,12 +120,4 @@ public class MyConsumer {
 			}
 		}
 	}
-	
-	
-	
-	
-	
-	
-	
-	
 }
